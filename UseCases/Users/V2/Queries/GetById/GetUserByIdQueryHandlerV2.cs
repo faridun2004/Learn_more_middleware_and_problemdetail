@@ -14,7 +14,6 @@ namespace RegisterService.UseCases.Users.V2.Queries.GetById
         {
             _context = context;
         }
-
         public async Task<UserV2> Handle(GetUserByIdQueryV2 request, CancellationToken cancellationToken)
         {
             var user = await _context.Users
@@ -28,10 +27,7 @@ namespace RegisterService.UseCases.Users.V2.Queries.GetById
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (user == null)
-                throw new NotFoundException($"User with ID {request.Id} not found");
-
-            return user;
+            return user ?? throw new NotFoundException("User not found");
         }
 
     }

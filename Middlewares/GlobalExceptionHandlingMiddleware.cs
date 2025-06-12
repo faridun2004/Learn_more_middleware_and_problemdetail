@@ -87,17 +87,18 @@ namespace RegisterService.Middlewares
             }
         }
 
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        };
+
         private async Task WriteProblemDetails(HttpContext context, AppProblemDetails problem)
         {
             try
             {
-                var json = JsonSerializer.Serialize(problem, new JsonSerializerOptions
-                {
-                    WriteIndented = true,
-                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                });
-
+                var json = JsonSerializer.Serialize(problem, _jsonOptions);
                 await context.Response.WriteAsync(json);
             }
             catch (Exception serializationEx)
@@ -107,5 +108,6 @@ namespace RegisterService.Middlewares
                 await context.Response.WriteAsync("{\"title\":\"Internal Server Error\"}");
             }
         }
+
     }
 }

@@ -15,10 +15,10 @@ namespace RegisterService.UseCases.Users.V2.Commands.CreateUser
         {
             _context = context;
         }
-        
+  
         public async Task<UserV2> Handle(CreateUserCommandV2 request, CancellationToken cancellationToken)
         {
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email, cancellationToken))
                 throw new AppException("Email already exists");
             var user = new User
             {

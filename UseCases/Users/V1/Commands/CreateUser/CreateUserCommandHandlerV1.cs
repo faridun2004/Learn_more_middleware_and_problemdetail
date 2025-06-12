@@ -19,16 +19,8 @@ namespace RegisterService.UseCases.Users.V1.Commands.CreateUser
         }
         public async Task<UserV1> Handle(CreateUserCommandV1 request, CancellationToken cancellationToken)
         {
-            if (request.Age < 18)
-            {
-                throw new AppException("User must be at least 18 years old");
-            }
-            if (string.IsNullOrWhiteSpace(request.Name))
-                throw new AppException("Username cannot be empty");
-
             if (_context.Users.Any(u => u.Username == request.Name))
                 throw new AppException("Username already exists");
-
 
             var user = new User
             {

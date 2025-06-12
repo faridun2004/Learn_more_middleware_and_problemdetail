@@ -27,9 +27,7 @@ namespace RegisterService.UseCases.Users.V1.Queries.GetById
                     Age = u.BirthDate.HasValue ? DateTime.Now.Year - u.BirthDate.Value.Year : 0
                 }).FirstOrDefaultAsync(cancellationToken);
 
-            if (user == null)
-                throw new NotFoundException($"User with ID {request.Id} not found");
-            return user;        
+            return user ?? throw new NotFoundException("User not found");
         }
     }
 }

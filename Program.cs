@@ -2,7 +2,7 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using RegisterService;
+using RegisterService.Common.Behaviors;
 using RegisterService.Data;
 using RegisterService.Middlewares;
 using RegisterService.UseCases.Users.V2.Commands.CreateUser;

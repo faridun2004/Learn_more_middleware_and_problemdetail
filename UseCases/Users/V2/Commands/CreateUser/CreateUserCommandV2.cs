@@ -11,11 +11,10 @@ namespace RegisterService.UseCases.Users.V2.Commands.CreateUser
             get => _userName;
             set
             {
-                var trimmed = value?.Trim().Replace(" ","") ?? string.Empty;
-                if (trimmed.Length > 0)
-                    _userName = char.ToUpper(trimmed[0]) + trimmed.Substring(1).ToLower();
-                else
-                    _userName = string.Empty;
+                var trimmed = value?.Trim().Replace(" ", "") ?? string.Empty;
+                _userName = string.IsNullOrEmpty(trimmed)
+                    ? string.Empty
+                    : char.ToUpper(trimmed[0]) + trimmed[1..].ToLower();
             }
         }
         public string Email { get; set; } = string.Empty;
