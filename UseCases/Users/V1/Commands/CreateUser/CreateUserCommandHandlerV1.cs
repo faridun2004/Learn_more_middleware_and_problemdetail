@@ -27,7 +27,6 @@ namespace RegisterService.UseCases.Users.V1.Commands.CreateUser
                 Username = request.Name,
                 BirthDate = DateTime.UtcNow.AddYears(-request.Age), 
             };
-
             try
             {
                  _context.Users.Add(user);

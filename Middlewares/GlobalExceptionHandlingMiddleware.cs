@@ -2,7 +2,9 @@
 using RegisterService.Exceptions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-
+using System.Data;
+using Microsoft.EntityFrameworkCore;
+using System.Data.Entity.Core;
 namespace RegisterService.Middlewares
 {
     public class GlobalExceptionHandlingMiddleware
@@ -69,6 +71,14 @@ namespace RegisterService.Middlewares
                             detail: "Access is denied.",
                             statusCode: StatusCodes.Status401Unauthorized,
                             errorCode: "UNAUTHORIZED");
+                        break;
+                    case EntityException:
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                        problem = new AppProblemDetails(
+                            title: "Database Error",
+                            detail: "An error occurred while accessing the database.",
+                            statusCode: StatusCodes.Status500InternalServerError,
+                            errorCode: "DATABASE_ERROR");
                         break;
 
                     default:
