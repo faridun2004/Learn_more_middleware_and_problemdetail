@@ -1,7 +1,9 @@
 ﻿
 using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using RegisterService.Exceptions;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace RegisterService.Middlewares
 {
@@ -9,11 +11,13 @@ namespace RegisterService.Middlewares
     {
         private readonly RequestDelegate _next;
         private readonly ILogger<GlobalExceptionHandlingMiddleware> _logger;
+
         public GlobalExceptionHandlingMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlingMiddleware> logger)
         {
             _next = next;
             _logger = logger;
         }
+
         public async Task Invoke(HttpContext context)
         {
             try
@@ -25,61 +29,86 @@ namespace RegisterService.Middlewares
                 _logger.LogError(ex, "Unhandled exception");
                 context.Response.ContentType = "application/problem+json";
 
-                if (ex is ValidationException validationException)
+                AppProblemDetails problem;
+
+                switch (ex)
                 {
-                    var problem = new AppProblemDetails(
-                        title: "Validation error",
-                        detail: "One or more validation errors occurred",
-                        statusCode: StatusCodes.Status400BadRequest,
-                        errorCode: "VALIDATION_ERROR"
-                    );
+                    case ValidationException validationEx:
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        problem = new AppProblemDetails(
+                            title: "Validation error",
+                            detail: "One or more validation errors occurred.",
+                            statusCode: StatusCodes.Status400BadRequest,
+                            errorCode: "VALIDATION_ERROR");
 
-                    problem.Extensions["errors"] = validationException.Errors
-                        .GroupBy(e => e.PropertyName)
-                        .ToDictionary(
-                            g => g.Key,
-                            g => g.Select(x => x.ErrorMessage).ToArray()
-                        );
+                        problem.Extensions["errors"] = validationEx.Errors
+                            .GroupBy(e => e.PropertyName)
+                            .ToDictionary(g => g.Key, g => g.Select(x => x.ErrorMessage).ToArray());
+                        break;
 
-                    context.Response.StatusCode = problem.Status ?? StatusCodes.Status400BadRequest;
-                    await WriteProblemDetails(context, problem);
+                    case AppException appEx:
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        problem = new AppProblemDetails(
+                            title: "Bad Request",
+                            detail: appEx.Message,
+                            statusCode: StatusCodes.Status400BadRequest,
+                            errorCode: appEx.ErrorCode ?? "APP_ERROR");
+                        break;
+
+                    case NotFoundException notFoundEx:
+                        context.Response.StatusCode = StatusCodes.Status404NotFound;
+                        problem = new AppProblemDetails(
+                            title: "Not Found",
+                            detail: notFoundEx.Message,
+                            statusCode: StatusCodes.Status404NotFound,
+                            errorCode: "NOT_FOUND");
+                        break;
+
+                    case UnauthorizedAccessException:
+                        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                        problem = new AppProblemDetails(
+                            title: "Unauthorized",
+                            detail: "Access is denied.",
+                            statusCode: StatusCodes.Status401Unauthorized,
+                            errorCode: "UNAUTHORIZED");
+                        break;
+
+                    default:
+                        context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                        problem = new AppProblemDetails(
+                            title: "Internal Server Error",
+                            detail: "An unexpected error occurred.",
+                            statusCode: StatusCodes.Status500InternalServerError,
+                            errorCode: "INTERNAL_ERROR");
+                        break;
                 }
-                else if (ex is AppException appException)
-                {
-                    var problem = new AppProblemDetails(
-                        title: "Bad Request",
-                        detail: appException.Message,
-                        statusCode: StatusCodes.Status400BadRequest,
-                        errorCode: appException.ErrorCode
-                    );
 
-                    context.Response.StatusCode = problem.Status ?? StatusCodes.Status400BadRequest;
-                    await WriteProblemDetails(context, problem);
-                }
-                else
-                {
-                    var problem = new AppProblemDetails(
-                        title: "Internal Server Error",
-                        detail: "An unexpected error occurred.",
-                        statusCode: StatusCodes.Status500InternalServerError,
-                        errorCode: "INTERNAL_ERROR"
-                    );
+                problem.Extensions["traceId"] = context.TraceIdentifier;
 
-                    context.Response.StatusCode = problem.Status ?? StatusCodes.Status500InternalServerError;
-                    await WriteProblemDetails(context, problem);
-                }
+                await WriteProblemDetails(context, problem);
             }
         }
 
         private async Task WriteProblemDetails(HttpContext context, AppProblemDetails problem)
         {
-            var json = JsonSerializer.Serialize(problem, new JsonSerializerOptions
+            try
             {
-                WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            });
-            await context.Response.WriteAsync(json);
+                var json = JsonSerializer.Serialize(problem, new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                });
 
+                await context.Response.WriteAsync(json);
+            }
+            catch (Exception serializationEx)
+            {
+                _logger.LogError(serializationEx, "Failed to serialize problem details");
+                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+                await context.Response.WriteAsync("{\"title\":\"Internal Server Error\"}");
+            }
         }
     }
 }
+
