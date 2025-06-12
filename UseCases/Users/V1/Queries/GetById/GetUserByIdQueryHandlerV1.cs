@@ -1,6 +1,7 @@
 ﻿using MediatR;
 using RegisterService.Data;
 using RegisterService.DTO;
+using RegisterService.Exceptions;
 
 namespace RegisterService.UseCases.Users.V1.Queries.GetById
 {
@@ -15,9 +16,9 @@ namespace RegisterService.UseCases.Users.V1.Queries.GetById
 
         public async Task<UserV1> Handle(GetUserByIdQueryV1 request, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FindAsync(new object[] { request.Id }, cancellationToken);
-
-            if (user == null) return null;
+            var user = await _context.Users.FindAsync(request.Id, cancellationToken);
+            if (user == null)
+                throw new NotFoundException($"User with ID {request.Id} not found");
 
             return new UserV1
             {
