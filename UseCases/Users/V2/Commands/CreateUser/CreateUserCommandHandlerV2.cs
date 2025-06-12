@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.EntityFrameworkCore;
 using RegisterService.Data;
 using RegisterService.DTO;
 using RegisterService.Entity;
@@ -14,14 +15,11 @@ namespace RegisterService.UseCases.Users.V2.Commands.CreateUser
         {
             _context = context;
         }
-
+        
         public async Task<UserV2> Handle(CreateUserCommandV2 request, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(request.Username))
-                throw new AppException("Username cannot be empty");
-
-            if (string.IsNullOrWhiteSpace(request.Email))
-                throw new AppException("Email cannot be empty");
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email))
+                throw new AppException("Email already exists");
             var user = new User
             {
                 Username = request.Username,

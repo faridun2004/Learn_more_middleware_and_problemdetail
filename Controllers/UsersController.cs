@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using RegisterService.DTO;
 using RegisterService.UseCases.Users.V1.Commands.CreateUser;
@@ -20,13 +21,12 @@ namespace RegisterService.Controllers
         {
             _mediator = mediator;
         }
-
         // ========== V1 ACTIONS ==========
         [MapToApiVersion("1.0")]
         [HttpGet("{id}")]
         public async Task<ActionResult<UserV1>> GetUserV1(int id)
         {
-            var query = new GetUserByIdQueryV1 { Id = id };
+            var query = new GetUserByIdQueryV1(id);
             var result = await _mediator.Send(query);
 
             if (result == null) return NotFound();
@@ -46,7 +46,7 @@ namespace RegisterService.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<UserV2>> GetUserV2(int id)
         {
-            var query = new GetUserByIdQueryV2 { Id = id };
+            var query = new GetUserByIdQueryV2 (id);
             var result = await _mediator.Send(query);
 
             if (result == null) return NotFound();
