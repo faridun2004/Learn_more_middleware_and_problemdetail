@@ -25,9 +25,9 @@ namespace RegisterService.UseCases.Users.V2.Commands.CreateUser
             var user = new User
             {
                 Username = request.Username,
-                Email = request.Email
+                Email = request.Email,
+                Password = request.Password,          
             };
-
             _context.Users.Add(user);
             await _context.SaveChangesAsync(cancellationToken);
 
@@ -35,7 +35,8 @@ namespace RegisterService.UseCases.Users.V2.Commands.CreateUser
             {
                 Id = user.Id,
                 Username = user.Username,
-                Email = user.Email
+                Email = user.Email,
+                Password = user.Password,
             };
         }
     }

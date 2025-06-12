@@ -1,6 +1,4 @@
-﻿
-using FluentValidation;
-using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
 using RegisterService.Exceptions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -111,4 +109,3 @@ namespace RegisterService.Middlewares
         }
     }
 }
-
