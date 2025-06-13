@@ -3,16 +3,15 @@ using System.Text.Json.Serialization;
 
 namespace RegisterService.Exceptions
 {
-    public class AppProblemDetails: ProblemDetails
+    public class AppProblemDetails : ProblemDetails
     {
-        [JsonPropertyName("ErrorCode")]
+        [JsonPropertyName("errorCode")]
         public string ErrorCode { get; set; }
-        public Dictionary<string, object> Extensions { get; } = new();
-        public AppProblemDetails(string title, string detail,int? statusCode, string errorCode) 
+        public AppProblemDetails(string title, string detail, int? statusCode, string errorCode)
         {
             Title = title;
             Detail = detail;
-            Status=statusCode;
+            Status = statusCode;
             ErrorCode = errorCode;
             Type = $"https://httpstatuses.com/{statusCode}";
         }

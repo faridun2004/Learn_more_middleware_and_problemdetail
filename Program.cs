@@ -2,48 +2,44 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 using RegisterService.Common.Behaviors;
 using RegisterService.Data;
-using RegisterService.Middlewares;
+using RegisterService.Exceptions;
 using RegisterService.UseCases.Users.V2.Commands.CreateUser;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddLogging(); 
-builder.Services.AddMediatR(cfg=>cfg.RegisterServicesFromAssembly
-                (typeof(Program).Assembly));
-// Добавляем версионирование API
+builder.Services.AddMediatR(cfg=>cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
 builder.Services.AddApiVersioning(options =>
 {
     options.DefaultApiVersion = new ApiVersion(1, 0);
     options.AssumeDefaultVersionWhenUnspecified = true;
     options.ReportApiVersions = true;
 });
+
 builder.Services.AddValidatorsFromAssemblyContaining<CreateUserCommandV2Validator>();
 builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
-
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 builder.Services.AddVersionedApiExplorer(options =>
 {
     options.GroupNameFormat = "'v'VVV"; // Формат: v1, v2, v1.0, v2.1 и т.д.
     options.SubstituteApiVersionInUrl = true; // Автоматически подставляет версию в URL
 });
-// Добавляем Swagger для документации
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "User API v1", Version = "v1" });
-    c.SwaggerDoc("v2", new() { Title = "User API v2", Version = "v2" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "User API v1", Version = "v1" });
+    c.SwaggerDoc("v2", new OpenApiInfo { Title = "User API v2", Version = "v2" });
 });
 
-// Добавляем контекст базы данных
-builder.Services.AddDbContext<AppDbContext>(con => con
-                .UseNpgsql(builder.Configuration["ConnectionString"]));
-
+builder.Services.AddDbContext<AppDbContext>(con => con.UseNpgsql(builder.Configuration["ConnectionString"]));
 
 var app = builder.Build();
 using (var scope = app.Services.CreateScope())
@@ -58,7 +54,7 @@ using (var scope = app.Services.CreateScope())
         throw new InvalidOperationException("PersonContext could not be resolved from the service provider.");
     }
 }
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -68,7 +64,9 @@ if (app.Environment.IsDevelopment())
         options.SwaggerEndpoint("/swagger/v2/swagger.json", "v2");
     });
 }
-app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+app.UseExceptionHandler();
+
+//app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
